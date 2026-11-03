@@ -1,0 +1,41 @@
+# Application Service registration for lk-jwt-service
+#
+# Copy to ~/matrix/data/lk-jwt-as.yaml and replace:
+#   - matrix.example.com       → your Matrix domain
+#   - <LIVEKIT_AS_TOKEN>       → generated 64-char hex
+#   - <LIVEKIT_HS_TOKEN>       → generated 64-char hex
+#
+# These must match LIVEKIT_AS_TOKEN / LIVEKIT_HS_TOKEN in rtc/lk-jwt/.env
+#
+# This file is referenced from homeserver.yaml:
+#   app_service_config_files:
+#     - /data/lk-jwt-as.yaml
+
+id: "LiveKit JWT service"
+as_token: "<LIVEKIT_AS_TOKEN>"
+hs_token: "<LIVEKIT_HS_TOKEN>"
+sender_localpart: "_lk_jwt_service"
+
+namespaces:
+  users:
+    - exclusive: false
+      regex: ".*"
+  aliases: []
+  rooms: []
+
+# No event traffic required (url: null)
+url: null
+
+# ===== MSC4502: room membership lookups =====
+# Lets lk-jwt verify that the requesting user is joined to the room.
+io.element.msc4502.scopes: [ "urn:matrix:client:io.element.msc4502:rooms:is_joined" ]
+
+# ===== MSC4512: proxy /rtc/livekit requests =====
+# Synapse forwards /_matrix/client/unstable/io.element.msc4195/rtc/livekit/*
+# to lk-jwt at the given URL.
+#
+# 172.17.0.1 is the docker bridge IP. It must be reachable from Synapse's
+# container, which requires lk-jwt to be bound to 172.17.0.1:8081:8080
+# in rtc/docker-compose.yml.
+io.element.msc4512.proxy_prefix: "rtc/livekit"
+io.element.msc4512.proxy_url: "http://172.17.0.1:8081"

@@ -1,0 +1,76 @@
+# LiveKit configuration for matrix-homeserver-stack
+#
+# Copy to ~/matrix/rtc/livekit/livekit.yaml and replace:
+#   - matrix.example.com    → your Matrix domain
+#   - <LIVEKIT_API_KEY>     → generated 16-char hex
+#   - <LIVEKIT_API_SECRET>  → generated 64-char hex
+#
+# Generate secrets with:
+#   openssl rand -hex 8    # API key
+#   openssl rand -hex 32   # API secret
+#
+# Then use the same key/secret in rtc/lk-jwt/.env
+
+port: 7880
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50020
+  use_external_ip: true
+  enable_loopback_candidate: false
+  # Adds the LAN IP to ICE candidates so LAN clients avoid NAT hairpin
+  advertise_internal_ip: true
+
+# ===== Embedded TURN server =====
+# LiveKit's built-in TURN handles MatrixRTC relay.
+# This REPLACES coturn for MatrixRTC. Do not add an external TURN.
+#
+# DO NOT add a `secret:` field here. The embedded TURN uses the
+# LiveKit API key/secret from the `keys:` block below. An external
+# `secret:` causes: "field secret not found in type config.TURNConfig"
+turn:
+  enabled: true
+  domain: matrix.example.com
+  udp_port: 3479
+  relay_range_start: 50300
+  relay_range_end: 50310
+
+# ===== LiveKit API keys =====
+# These MUST match LIVEKIT_KEY / LIVEKIT_SECRET in rtc/lk-jwt/.env
+# and must match the API key Synapse uses in the AS registration.
+keys:
+  <LIVEKIT_API_KEY>: <LIVEKIT_API_SECRET>
+
+logging:
+  level: info
+  json: false
+
+# ===== Room settings =====
+room:
+  # AS mode: lk-jwt explicitly creates rooms via LiveKit API.
+  # LiveKit does NOT auto-create.
+  auto_create: false
+  empty_timeout: 300
+  max_participants: 20
+
+  # ===== Codec restriction =====
+  # VP8: default, simulcast, works everywhere
+  # H264: fallback, hardware-accelerated on Apple, no dependency descriptor
+  # Opus: audio
+  #
+  # VP9 and AV1 are EXCLUDED because they trigger
+  # `dependencyDescriptorExtID mismatch` on LiveKit 1.13.11 with
+  # mixed client SDKs (Rust ↔ JS). See docs/TROUBLESHOOTING.md.
+  enabled_codecs:
+    - mime: video/VP8
+    - mime: video/H264
+    - mime: audio/opus
+
+# ===== Webhook for participant lifecycle (MSC4140) =====
+# LiveKit notifies lk-jwt of participant join/leave events.
+# Requires lk-jwt in AS mode (delegate_delayed_leave handling).
+webhook:
+  api_key: <LIVEKIT_API_KEY>
+  urls:
+    - https://matrix.example.com/livekit/jwt/sfu_webhook

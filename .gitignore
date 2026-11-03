@@ -1,0 +1,53 @@
+# ===== Secrets (never commit) =====
+.env
+!.env.example
+
+*-as.yaml
+!*-as.yaml.example
+
+homeserver.yaml
+!homeserver.yaml.example
+
+livekit.yaml
+!livekit.yaml.example
+
+turnserver.conf
+!turnserver.conf.example
+
+Caddyfile
+!Caddyfile.example
+
+# ===== Certs and keys =====
+*.pem
+*.key
+*.crt
+*.signing.key
+certs/
+
+# ===== Data =====
+data/
+*.db
+*.db-wal
+*.db-shm
+media_store/
+homeserver.db*
+homeserver.yaml.bak-*
+*.bak-pre-*
+
+# ===== Backups =====
+backups/
+*.tar.gz
+*.tar.gz.gpg
+*.sha256
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== System =====
+.DS_Store
+*.swp
+*~
+.vscode/
+.idea/
+

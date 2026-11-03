@@ -1,0 +1,68 @@
+# Caddyfile for matrix-homeserver-stack
+#
+# Copy to /etc/caddy/Caddyfile and replace:
+#   - matrix.example.com → your Matrix domain
+#   - example.com       → your apex domain
+#
+# Critical: DO NOT add a static handler for
+# /_matrix/client/unstable/org.matrix.msc4143/rtc/transports
+# That endpoint MUST be served by Synapse (authenticated).
+# A static Caddy response breaks cross-client calls.
+
+example.com {
+	route {
+		handle /.well-known/matrix/server {
+			header Content-Type application/json
+			respond `{"m.server":"matrix.example.com:443"}` 200
+		}
+		handle /.well-known/matrix/client {
+			header Content-Type application/json
+			header Access-Control-Allow-Origin "*"
+			respond `{"m.homeserver":{"base_url":"https://matrix.example.com/"}}` 200
+		}
+		redir https://www.example.com{uri} permanent
+	}
+}
+
+www.example.com {
+	# Optional: replace with your own service if you have one
+	# reverse_proxy 127.0.0.1:8080
+	# For now, redirect to apex
+	redir https://example.com{uri} permanent
+}
+
+matrix.example.com {
+	# ===== Matrix discovery =====
+	handle /.well-known/matrix/server {
+		header Content-Type application/json
+		respond `{"m.server":"matrix.example.com:443"}` 200
+	}
+
+	handle /.well-known/matrix/client {
+		header Access-Control-Allow-Origin "*"
+		header Content-Type application/json
+		respond `{"m.homeserver":{"base_url":"https://matrix.example.com/"},"org.matrix.msc4143.rtc_foci":[{"type":"livekit","livekit_service_url":"https://matrix.example.com/livekit/jwt"}]}` 200
+	}
+
+	# ===== LiveKit paths =====
+	# lk-jwt (token issuance, AS webhook receiver)
+	handle_path /livekit/jwt/* {
+		reverse_proxy 127.0.0.1:8081
+	}
+
+	# LiveKit (WebSocket signaling)
+	handle_path /livekit/sfu/* {
+		reverse_proxy 127.0.0.1:7880
+	}
+
+	# ===== Everything else → Synapse =====
+	# This includes:
+	#   /_matrix/client/*      — client-server API
+	#   /_matrix/federation/*  — federation
+	#   /_synapse/*            — admin endpoints
+	#   /_matrix/client/unstable/org.matrix.msc4143/rtc/transports
+	#                          — MUST reach Synapse (authenticated)
+	#   /_matrix/client/unstable/io.element.msc4195/rtc/livekit/*
+	#                          — AS proxy to lk-jwt (via Synapse)
+	reverse_proxy 127.0.0.1:8008
+}

@@ -1,0 +1,19 @@
+services:
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: livekit
+    restart: always
+    network_mode: host
+    volumes:
+      - ./livekit/livekit.yaml:/etc/livekit.yaml:ro
+    command: --config /etc/livekit.yaml
+
+  lk-jwt:
+    image: ghcr.io/element-hq/lk-jwt-service:latest
+    container_name: lk-jwt
+    restart: always
+    ports:
+      - "127.0.0.1:8081:8080"      # for Caddy on the host
+      - "172.17.0.1:8081:8080"     # for Synapse's AS proxy on docker0
+    env_file:
+      - ./lk-jwt/.env

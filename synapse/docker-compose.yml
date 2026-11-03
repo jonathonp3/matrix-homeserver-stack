@@ -1,0 +1,14 @@
+services:
+  synapse:
+    image: ghcr.io/element-hq/synapse:latest
+    container_name: synapse
+    restart: always
+    ports:
+      - "127.0.0.1:8008:8008"
+    volumes:
+      - ./data:/data
+    environment:
+      - SYNAPSE_SERVER_NAME=matrix.example.com
+      - SYNAPSE_REPORT_STATS=no
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
